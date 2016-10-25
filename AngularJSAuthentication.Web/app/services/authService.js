@@ -63,9 +63,11 @@ app.factory('authService', ['$http', '$q', 'localStorageService', 'ngAuthSetting
 
         localStorageService.remove('authorizationData');
 
-        _authentication.isAuth = false;
-        _authentication.userName = "";
-        _authentication.useRefreshTokens = false;
+        _authentication = {
+            isAuth: false,
+            userName: "",
+            useRefreshTokens: false
+        };
 
     };
 

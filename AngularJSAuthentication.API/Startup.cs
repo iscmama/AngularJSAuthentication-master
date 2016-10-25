@@ -3,6 +3,8 @@ using Microsoft.Owin;
 using Microsoft.Owin.Security.Facebook;
 using Microsoft.Owin.Security.Google;
 using Microsoft.Owin.Security.OAuth;
+using Owin.Security.Providers.LinkedIn;
+using Microsoft.Owin.Security.Twitter;
 using Owin;
 using System;
 using System.Collections.Generic;
@@ -20,6 +22,8 @@ namespace AngularJSAuthentication.API
         public static OAuthBearerAuthenticationOptions OAuthBearerOptions { get; private set; }
         public static GoogleOAuth2AuthenticationOptions googleAuthOptions { get; private set; }
         public static FacebookAuthenticationOptions facebookAuthOptions { get; private set; }
+        public static LinkedInAuthenticationOptions linkedInAuthOptions { get; private set; }
+        public static TwitterAuthenticationOptions twitterAuthOptions { get; private set; }
 
         public void Configuration(IAppBuilder app)
         {
@@ -31,7 +35,6 @@ namespace AngularJSAuthentication.API
             app.UseCors(Microsoft.Owin.Cors.CorsOptions.AllowAll);
             app.UseWebApi(config);
             Database.SetInitializer(new MigrateDatabaseToLatestVersion<AuthContext, AngularJSAuthentication.API.Migrations.Configuration>());
-
         }
 
         public void ConfigureOAuth(IAppBuilder app)
@@ -41,7 +44,6 @@ namespace AngularJSAuthentication.API
             OAuthBearerOptions = new OAuthBearerAuthenticationOptions();
 
             OAuthAuthorizationServerOptions OAuthServerOptions = new OAuthAuthorizationServerOptions() {
-            
                 AllowInsecureHttp = true,
                 TokenEndpointPath = new PathString("/token"),
                 AccessTokenExpireTimeSpan = TimeSpan.FromMinutes(30),
@@ -49,11 +51,9 @@ namespace AngularJSAuthentication.API
                 RefreshTokenProvider = new SimpleRefreshTokenProvider()
             };
 
-            // Token Generation
             app.UseOAuthAuthorizationServer(OAuthServerOptions);
             app.UseOAuthBearerAuthentication(OAuthBearerOptions);
 
-            //Configure Google External Login
             googleAuthOptions = new GoogleOAuth2AuthenticationOptions()
             {
                 ClientId = "xxxxxx",
@@ -62,16 +62,30 @@ namespace AngularJSAuthentication.API
             };
             app.UseGoogleAuthentication(googleAuthOptions);
 
-            //Configure Facebook External Login
             facebookAuthOptions = new FacebookAuthenticationOptions()
             {
-                AppId = "xxxxxx",
-                AppSecret = "xxxxxx",
+                AppId = "1050543328368934",
+                AppSecret = "78145c119c1d6c64dd64bf129cc3a0c2",
                 Provider = new FacebookAuthProvider()
             };
             app.UseFacebookAuthentication(facebookAuthOptions);
 
+            linkedInAuthOptions = new LinkedInAuthenticationOptions()
+            {
+                ClientId = "78h6qf8zyp15lg",
+                ClientSecret = "I86DaIuxrfqsv3tW",
+                Provider = new LinkedInAuthenticationProvider()
+            };
+            app.UseLinkedInAuthentication(linkedInAuthOptions);
+
+            twitterAuthOptions = new TwitterAuthenticationOptions()
+            {
+                ConsumerKey = "oX140tWdlh4W0vEeD48xlfoaE",
+                ConsumerSecret = "WnY8OooFOEEiyvB9nJLPEgtDP12HXAfcTOmEYfsEfNbFslQDHs",
+                Provider = new TwitterAuthenticationProvider()
+            };
+            app.UseTwitterAuthentication(twitterAuthOptions);
+
         }
     }
-
 }

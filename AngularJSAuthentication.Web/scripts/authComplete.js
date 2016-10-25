@@ -46,6 +46,8 @@ window.common = (function () {
 
 var fragment = common.getFragment();
 
+console.log(fragment);
+
 window.location.hash = fragment.state || '';
 
 window.opener.$windowScope.authCompletedCB(fragment);

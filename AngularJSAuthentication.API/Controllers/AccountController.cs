@@ -81,7 +81,7 @@ namespace AngularJSAuthentication.API.Controllers
                 return BadRequest(redirectUriValidationResult);
             }
 
-            ExternalLoginData externalLogin = ExternalLoginData.FromIdentity(User.Identity as ClaimsIdentity);
+            ExternalLoginData externalLogin = ExternalLoginData.FromIdentity(User.Identity as ClaimsIdentity, provider);
 
             if (externalLogin == null)
             {
@@ -294,63 +294,94 @@ namespace AngularJSAuthentication.API.Controllers
 
         private async Task<ParsedExternalAccessToken> VerifyExternalAccessToken(string provider, string accessToken)
         {
-            ParsedExternalAccessToken parsedToken = null;
-
-            var verifyTokenEndPoint = "";
-
-            if (provider == "Facebook")
+            try
             {
-                //You can get it from here: https://developers.facebook.com/tools/accesstoken/
-                //More about debug_tokn here: http://stackoverflow.com/questions/16641083/how-does-one-get-the-app-access-token-for-debug-token-inspection-on-facebook
-                var appToken = "xxxxxx";
-                verifyTokenEndPoint = string.Format("https://graph.facebook.com/debug_token?input_token={0}&access_token={1}", accessToken, appToken);
-            }
-            else if (provider == "Google")
-            {
-                verifyTokenEndPoint = string.Format("https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={0}", accessToken);
-            }
-            else
-            {
-                return null;
-            }
+                ParsedExternalAccessToken parsedToken = null;
 
-            var client = new HttpClient();
-            var uri = new Uri(verifyTokenEndPoint);
-            var response = await client.GetAsync(uri);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-
-                dynamic jObj = (JObject)Newtonsoft.Json.JsonConvert.DeserializeObject(content);
-
-                parsedToken = new ParsedExternalAccessToken();
+                var verifyTokenEndPoint = "";
 
                 if (provider == "Facebook")
                 {
-                    parsedToken.user_id = jObj["data"]["user_id"];
-                    parsedToken.app_id = jObj["data"]["app_id"];
-
-                    if (!string.Equals(Startup.facebookAuthOptions.AppId, parsedToken.app_id, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return null;
-                    }
+                    //You can get it from here: https://developers.facebook.com/tools/accesstoken/
+                    //More about debug_tokn here: http://stackoverflow.com/questions/16641083/how-does-one-get-the-app-access-token-for-debug-token-inspection-on-facebook
+                    var appToken = "1050543328368934|fhGX5LU_Th0rTjB2HvZf3B5P43w";
+                    verifyTokenEndPoint = string.Format("https://graph.facebook.com/debug_token?input_token={0}&access_token={1}", accessToken, appToken);
                 }
                 else if (provider == "Google")
                 {
-                    parsedToken.user_id = jObj["user_id"];
-                    parsedToken.app_id = jObj["audience"];
-
-                    if (!string.Equals(Startup.googleAuthOptions.ClientId, parsedToken.app_id, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return null;
-                    }
-
+                    verifyTokenEndPoint = string.Format("https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={0}", accessToken);
+                }
+                else if (provider == "LinkedIn")
+                {
+                    verifyTokenEndPoint = string.Format("https://api.linkedin.com/v1/people/~:(id)?format=json&oauth2_access_token={0}", accessToken);
+                }
+                else if (provider == "Twitter")
+                {
+                    verifyTokenEndPoint = string.Format("https://api.twitter.com/oauth/access_token", accessToken);
+                }
+                else
+                {
+                    return null;
                 }
 
-            }
+                var client = new HttpClient();
+                var uri = new Uri(verifyTokenEndPoint);
+                var response = await client.GetAsync(uri);
 
-            return parsedToken;
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+
+                    dynamic jObj = (JObject)Newtonsoft.Json.JsonConvert.DeserializeObject(content);
+
+                    parsedToken = new ParsedExternalAccessToken();
+
+                    if (provider == "Facebook")
+                    {
+                        parsedToken.user_id = jObj["data"]["user_id"];
+                        parsedToken.app_id = jObj["data"]["app_id"];
+
+                        if (!string.Equals(Startup.facebookAuthOptions.AppId, parsedToken.app_id, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return null;
+                        }
+                    }
+                    else if (provider == "Google")
+                    {
+                        parsedToken.user_id = jObj["user_id"];
+                        parsedToken.app_id = jObj["audience"];
+
+                        if (!string.Equals(Startup.googleAuthOptions.ClientId, parsedToken.app_id, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return null;
+                        }
+
+                    }
+                    else if (provider == "LinkedIn")
+                    {
+                        parsedToken = new ParsedExternalAccessToken();
+                        parsedToken.user_id = jObj["id"];
+                        parsedToken.app_id = System.Configuration.ConfigurationManager.AppSettings["LinkedInAppId"];
+
+                        if (!string.Equals(Startup.linkedInAuthOptions.ClientId, parsedToken.app_id, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return null;
+                        }
+                    }
+                    else if (provider == "Twitter")
+                    {
+                        parsedToken = new ParsedExternalAccessToken();
+                        parsedToken.user_id = accessToken;
+                        parsedToken.app_id = "ngAuthApp";
+                    }
+                }
+
+                return parsedToken;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
 
         private JObject GenerateLocalAccessTokenResponse(string userName)
@@ -392,7 +423,7 @@ namespace AngularJSAuthentication.API.Controllers
             public string UserName { get; set; }
             public string ExternalAccessToken { get; set; }
 
-            public static ExternalLoginData FromIdentity(ClaimsIdentity identity)
+            public static ExternalLoginData FromIdentity(ClaimsIdentity identity, string provider)
             {
                 if (identity == null)
                 {
@@ -411,12 +442,28 @@ namespace AngularJSAuthentication.API.Controllers
                     return null;
                 }
 
+                string accessToken = string.Empty;
+
+                if (provider == "LinkedIn")
+                {
+                    Claim claimAccessToken = identity.Claims.FirstOrDefault(e => e.Type == "urn:linkedin:accesstoken");
+
+                    if (claimAccessToken != null)
+                    {
+                        accessToken = claimAccessToken.Value;
+                    }
+                }
+                else
+                {
+                    accessToken = identity.FindFirstValue("ExternalAccessToken");
+                }
+
                 return new ExternalLoginData
                 {
                     LoginProvider = providerKeyClaim.Issuer,
                     ProviderKey = providerKeyClaim.Value,
                     UserName = identity.FindFirstValue(ClaimTypes.Name),
-                    ExternalAccessToken = identity.FindFirstValue("ExternalAccessToken"),
+                    ExternalAccessToken = accessToken
                 };
             }
         }
