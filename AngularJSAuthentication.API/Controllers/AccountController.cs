@@ -15,6 +15,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
+using System.Net.Http.Headers;
 
 namespace AngularJSAuthentication.API.Controllers
 {
@@ -59,6 +60,7 @@ namespace AngularJSAuthentication.API.Controllers
         [OverrideAuthentication]
         [HostAuthentication(DefaultAuthenticationTypes.ExternalCookie)]
         [AllowAnonymous]
+        [RequireHttps]
         [Route("ExternalLogin", Name = "ExternalLogin")]
         public async Task<IHttpActionResult> GetExternalLogin(string provider, string error = null)
         {
@@ -317,16 +319,37 @@ namespace AngularJSAuthentication.API.Controllers
                 }
                 else if (provider == "Twitter")
                 {
-                    verifyTokenEndPoint = string.Format("https://api.twitter.com/oauth/access_token", accessToken);
+                    verifyTokenEndPoint = string.Format("https://www.linkedin.com/oauth/v2/accessToken", accessToken);
                 }
                 else
                 {
                     return null;
                 }
 
+                //using (var clientPost = new HttpClient())
+                //{
+                //    clientPost.DefaultRequestHeaders.Accept.Clear();
+                //    clientPost.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                //    var formContent = new FormUrlEncodedContent(new[]
+                //    {
+                //        new KeyValuePair<string, string>("grant_type", "authorization_code"),
+                //        new KeyValuePair<string, string>("code", accessToken),
+                //        new KeyValuePair<string, string>("redirect_uri", "https://localhost:44385/authcomplete.html"),
+                //        new KeyValuePair<string, string>("client_id", "6hiW6eeKKWNx00xBiICcbtVlP"),
+                //        new KeyValuePair<string, string>("client_secret", "kI5gRkew9tf0l1itwReiFj5L7dnFwWjTRSldh5IsmnAQrNc0Yn")
+                //    });
+
+                //    HttpResponseMessage responseMessage = await clientPost.PostAsync("https://www.linkedin.com/oauth/v2/accessToken", formContent);
+
+                //    var responseJson = await responseMessage.Content.ReadAsStringAsync();
+                //}
+
+
                 var client = new HttpClient();
                 var uri = new Uri(verifyTokenEndPoint);
                 var response = await client.GetAsync(uri);
+                var content1 = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -442,21 +465,7 @@ namespace AngularJSAuthentication.API.Controllers
                     return null;
                 }
 
-                string accessToken = string.Empty;
-
-                if (provider == "LinkedIn")
-                {
-                    Claim claimAccessToken = identity.Claims.FirstOrDefault(e => e.Type == "urn:linkedin:accesstoken");
-
-                    if (claimAccessToken != null)
-                    {
-                        accessToken = claimAccessToken.Value;
-                    }
-                }
-                else
-                {
-                    accessToken = identity.FindFirstValue("ExternalAccessToken");
-                }
+                string accessToken = identity.FindFirstValue("ExternalAccessToken");
 
                 return new ExternalLoginData
                 {

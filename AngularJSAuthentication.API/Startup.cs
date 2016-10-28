@@ -12,6 +12,7 @@ using System.Data.Entity;
 using System.Linq;
 using System.Web;
 using System.Web.Http;
+using Microsoft.Owin.Security;
 
 [assembly: OwinStartup(typeof(AngularJSAuthentication.API.Startup))]
 
@@ -56,8 +57,8 @@ namespace AngularJSAuthentication.API
 
             googleAuthOptions = new GoogleOAuth2AuthenticationOptions()
             {
-                ClientId = "xxxxxx",
-                ClientSecret = "xxxxxx",
+                ClientId = "857698632407-2oh1dlmgvkcr3s1t7ogk2r1kvvr2t34v.apps.googleusercontent.com",
+                ClientSecret = "EwDEtu5aecpoPO74wQTQNDDy",
                 Provider = new GoogleAuthProvider()
             };
             app.UseGoogleAuthentication(googleAuthOptions);
@@ -74,15 +75,26 @@ namespace AngularJSAuthentication.API
             {
                 ClientId = "78h6qf8zyp15lg",
                 ClientSecret = "I86DaIuxrfqsv3tW",
-                Provider = new LinkedInAuthenticationProvider()
+                Provider = new LinkedInAuthProvider()
             };
             app.UseLinkedInAuthentication(linkedInAuthOptions);
 
             twitterAuthOptions = new TwitterAuthenticationOptions()
             {
-                ConsumerKey = "oX140tWdlh4W0vEeD48xlfoaE",
-                ConsumerSecret = "WnY8OooFOEEiyvB9nJLPEgtDP12HXAfcTOmEYfsEfNbFslQDHs",
-                Provider = new TwitterAuthenticationProvider()
+                ConsumerKey = "6hiW6eeKKWNx00xBiICcbtVlP",
+                ConsumerSecret = "kI5gRkew9tf0l1itwReiFj5L7dnFwWjTRSldh5IsmnAQrNc0Yn",
+                Provider = new TwitterAuthProvider(),
+                BackchannelCertificateValidator = new CertificateSubjectKeyIdentifierValidator(new[]
+                {
+                    "A5EF0B11CEC04103A34A659048B21CE0572D7D47", // VeriSign Class 3 Secure Server CA - G2
+                    "0D445C165344C1827E1D20AB25F40163D8BE79A5", // VeriSign Class 3 Secure Server CA - G3
+                    "7FD365A7C2DDECBBF03009F34339FA02AF333133", // VeriSign Class 3 Public Primary Certification Authority - G5
+                    "39A55D933676616E73A761DFA16A7E59CDE66FAD", // Symantec Class 3 Secure Server CA - G4
+                    "‎add53f6680fe66e383cbac3e60922e3b4c412bed", // Symantec Class 3 EV SSL CA - G3
+                    "4eb6d578499b1ccf5f581ead56be3d9b6744a5e5", // VeriSign Class 3 Primary CA - G5
+                    "5168FF90AF0207753CCCD9656462A212B859723B", // DigiCert SHA2 High Assurance Server C‎A 
+                    "B13EC36903F8BF4701D498261A0802EF63642BC3" // DigiCert High Assurance EV Root CA
+                })
             };
             app.UseTwitterAuthentication(twitterAuthOptions);
 
