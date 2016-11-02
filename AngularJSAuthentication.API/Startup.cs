@@ -13,6 +13,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Http;
 using Microsoft.Owin.Security;
+using System.Net.Http;
 
 [assembly: OwinStartup(typeof(AngularJSAuthentication.API.Startup))]
 
@@ -69,6 +70,9 @@ namespace AngularJSAuthentication.API
                 AppSecret = "78145c119c1d6c64dd64bf129cc3a0c2",
                 Provider = new FacebookAuthProvider()
             };
+
+            facebookAuthOptions.Scope.Add("email");
+
             app.UseFacebookAuthentication(facebookAuthOptions);
 
             linkedInAuthOptions = new LinkedInAuthenticationOptions()
